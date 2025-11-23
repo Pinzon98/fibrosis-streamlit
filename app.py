@@ -70,15 +70,16 @@ def preprocess_image(_image, target_size=TARGET_SIZE):
     image = image.resize(target_size)
 
     # Convertir a array numpy
-    img_array = np.array(image)
+    img_array = np.array(image)          # valores 0–255
 
-    # Normalizar [0,1]
-    img_array = img_array.astype(np.float32) / 255.0
+    # Mismo rango que en entrenamiento → NO normalizar
+    img_array = img_array.astype(np.float32)
 
     # Agregar dimensión batch
     img_array = np.expand_dims(img_array, axis=0)
 
     return img_array
+
 
 
 # ======================================
