@@ -46,7 +46,6 @@ model = load_model()
 def get_target_size_from_model(model):
     """
     Obtiene el tamaño de entrada esperado por el modelo (alto, ancho).
-    Ejemplo típico: (224, 224)
     """
     input_shape = model.input_shape  # (None, H, W, C)
     if len(input_shape) == 4:
@@ -62,8 +61,9 @@ def preprocess_image(_image, target_size=TARGET_SIZE):
     """
     Preprocesar imagen para el modelo de fibrosis hepática.
 
-    IMPORTANTE: el modelo se entrenó con píxeles en rango 0–255 (sin /255),
-    por lo que aquí NO normalizamos a [0,1].
+    IMPORTANTE:
+    El modelo se entrenó con píxeles en rango 0–255 (sin /255),
+    así que aquí NO normalizamos a [0,1].
     """
     # Convertir a RGB si es necesario
     if _image.mode != "RGB":
@@ -71,10 +71,10 @@ def preprocess_image(_image, target_size=TARGET_SIZE):
     else:
         image = _image
 
-    # Redimensionar
+    # Redimensionar al tamaño esperado por el modelo
     image = image.resize(target_size)
 
-    # Convertir a array numpy (valores 0–255)
+    # Convertir a array numpy (0–255)
     img_array = np.array(image).astype(np.float32)
 
     # Agregar dimensión batch: (1, H, W, C)
@@ -110,7 +110,6 @@ def predict_image(model, image):
 # Imágenes de ejemplo (Kaggle y Santa Fe)
 # ======================================
 # Suponemos que estos archivos están en la misma carpeta que app.py.
-# Usa la versión "_1" de cada fase.
 KAGGLE_IMAGES = {
     "F0": "K_F0_1.jpg",
     "F1": "K_F1_1.jpg",
@@ -140,7 +139,7 @@ def load_sample_image_local(path: str):
 
 def set_sample_image_from_path(path: str):
     image = load_sample_image_local(path)
-    if image is not None:
+    if image:
         st.session_state.image_to_predict = image
 
 
@@ -161,7 +160,7 @@ def render_example_row(title: str, images_dict: dict, button_prefix: str):
             if path is None:
                 continue
             img = load_sample_image_local(path)
-            if img is not None:
+            if img:
                 st.image(
                     img,
                     caption=f"{fase}",
@@ -251,7 +250,7 @@ Este demo utiliza una red neuronal convolucional (CNN) para **clasificar fibrosi
     # --------------------------
     # Mostrar imagen original y procesada
     # --------------------------
-    if image_to_predict is not None:
+    if image_to_predict:
         st.markdown("---")
         col1, col2 = st.columns([1, 1])
 
@@ -262,10 +261,10 @@ Este demo utiliza una red neuronal convolucional (CNN) para **clasificar fibrosi
         with col2:
             st.subheader("🔍 Imagen Procesada")
             processed_display = preprocess_image(image_to_predict)
-            # processed_display[0] está en float32 0–255; lo pasamos a uint8 para mostrar
+            # processed_display[0] está en float32 0–255; lo convertimos a uint8 para mostrar
             st.image(
                 processed_display[0].astype("uint8"),
-                caption=f"{TARGET_SIZE[0]}x{TARGET_SIZE[1]} (escala 0–255)",
+                caption=f"{TARGET_SIZE[0]}x{TARGET_SIZE[1]} (0–255, sin normalizar)",
                 use_container_width=True,
             )
 
@@ -302,7 +301,7 @@ Este demo utiliza una red neuronal convolucional (CNN) para **clasificar fibrosi
                 st.bar_chart(data=df.set_index("Fase")["Probabilidad"])
 
                 # Interpretación NO clínica
-                st.subheader("🧠 Interpretación (NO clínica)")
+                st.subheader("🧠 Interpretación")
 
                 fase_idx = CLASS_NAMES.index(predicted_class)
 
