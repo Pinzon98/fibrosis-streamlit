@@ -46,7 +46,7 @@ model = load_model()
 def get_target_size_from_model(model):
     """
     Obtiene el tamaño de entrada esperado por el modelo (alto, ancho).
-    Ejemplo típico: (225, 225)
+    Ejemplo típico: (224, 224)
     """
     input_shape = model.input_shape  # (None, H, W, C)
     if len(input_shape) == 4:
@@ -59,7 +59,12 @@ TARGET_SIZE = get_target_size_from_model(model)
 
 
 def preprocess_image(_image, target_size=TARGET_SIZE):
-    """Preprocesar imagen para el modelo de fibrosis hepática."""
+    """
+    Preprocesar imagen para el modelo de fibrosis hepática.
+
+    IMPORTANTE: el modelo se entrenó con píxeles en rango 0–255 (sin /255),
+    por lo que aquí NO normalizamos a [0,1].
+    """
     # Convertir a RGB si es necesario
     if _image.mode != "RGB":
         image = _image.convert("RGB")
@@ -69,17 +74,13 @@ def preprocess_image(_image, target_size=TARGET_SIZE):
     # Redimensionar
     image = image.resize(target_size)
 
-    # Convertir a array numpy
-    img_array = np.array(image)          # valores 0–255
+    # Convertir a array numpy (valores 0–255)
+    img_array = np.array(image).astype(np.float32)
 
-    # Mismo rango que en entrenamiento → NO normalizar
-    img_array = img_array.astype(np.float32)
-
-    # Agregar dimensión batch
+    # Agregar dimensión batch: (1, H, W, C)
     img_array = np.expand_dims(img_array, axis=0)
 
     return img_array
-
 
 
 # ======================================
@@ -139,7 +140,7 @@ def load_sample_image_local(path: str):
 
 def set_sample_image_from_path(path: str):
     image = load_sample_image_local(path)
-    if image:
+    if image is not None:
         st.session_state.image_to_predict = image
 
 
@@ -160,7 +161,7 @@ def render_example_row(title: str, images_dict: dict, button_prefix: str):
             if path is None:
                 continue
             img = load_sample_image_local(path)
-            if img:
+            if img is not None:
                 st.image(
                     img,
                     caption=f"{fase}",
@@ -250,7 +251,7 @@ Este demo utiliza una red neuronal convolucional (CNN) para **clasificar fibrosi
     # --------------------------
     # Mostrar imagen original y procesada
     # --------------------------
-    if image_to_predict:
+    if image_to_predict is not None:
         st.markdown("---")
         col1, col2 = st.columns([1, 1])
 
@@ -261,9 +262,10 @@ Este demo utiliza una red neuronal convolucional (CNN) para **clasificar fibrosi
         with col2:
             st.subheader("🔍 Imagen Procesada")
             processed_display = preprocess_image(image_to_predict)
+            # processed_display[0] está en float32 0–255; lo pasamos a uint8 para mostrar
             st.image(
-                processed_display[0],
-                caption=f"{TARGET_SIZE[0]}x{TARGET_SIZE[1]} normalizada",
+                processed_display[0].astype("uint8"),
+                caption=f"{TARGET_SIZE[0]}x{TARGET_SIZE[1]} (escala 0–255)",
                 use_container_width=True,
             )
 
